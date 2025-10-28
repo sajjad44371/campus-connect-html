@@ -9,3 +9,12 @@ def studentDashboard (request):
 
 def requestForm (request):
     return render(request, "requestForm.html")
+
+def facultyDashboard (request):
+    return render(request, "facultyDashboard.html")
+
+def signUp (request):
+    return render(request, "signUp.html")
+
+def login (request):
+    return render(request, "login.html")
