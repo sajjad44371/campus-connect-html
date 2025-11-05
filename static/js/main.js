@@ -1,150 +1,54 @@
-console.log("js file loaded successfully!");
+console.log("js loaded");
 
-function selectRole(role) {
-  const roleInput = document.getElementById("roleInput");
-  const studentTab = document.getElementById("student-tab");
-  const facultyTab = document.getElementById("faculty-tab");
-  const roleSpecificField = document.getElementById("roleSpecificField");
+const roleSelect = document.getElementById("role");
+const roleLabel = document.getElementById("roleLabel");
+const roleInputField = document.getElementById("roleInputField");
 
-  roleInput.value = role;
-
-  // Update tab styles (DaisyUI active class)
-  if (role === "student") {
-    studentTab.classList.add("tab-active");
-    facultyTab.classList.remove("tab-active");
-
-    // Change label and input for Student
-    roleSpecificField.innerHTML = `
-                    <label for="student_id" class="label block font-medium text-sm text-gray-700">Student ID / Roll No.</label>
-                    <input id="student_id" name="student_id" type="text" required
-                           class="input input-bordered w-full p-3 shadow-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="123456">
-                `;
-  } else {
-    studentTab.classList.remove("tab-active");
-    facultyTab.classList.add("tab-active");
-
-    // Change label and input for Faculty
-    roleSpecificField.innerHTML = `
-                    <label for="faculty_code" class="label block font-medium text-sm text-gray-700">Faculty ID / Unique Code</label>
-                    <input id="faculty_code" name="faculty_code" type="text" required
-                           class="input input-bordered w-full p-3 shadow-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="FAC-007">
-                `;
-  }
-}
-
-// registration
-
-document.addEventListener("DOMContentLoaded", () => {
-  const signupForm = document.getElementById("signupForm");
-  if (signupForm) {
-    signupForm.addEventListener("submit", handleSignup);
-  }
-
-  const loginForm = document.getElementById("loginForm");
-  if (loginForm) {
-    loginForm.addEventListener("submit", handleLogin);
-  }
-
-  if (document.getElementById("roleInput")) {
-    selectRole(document.getElementById("roleInput").value);
+roleSelect.addEventListener("change", function () {
+  if (this.value === "student") {
+    roleLabel.textContent = "Student ID / Roll No.";
+    roleInputField.name = "student_id";
+    roleInputField.placeholder = "123456";
+    roleInputField.required = true;
+  } else if (this.value === "faculty") {
+    roleLabel.textContent = "Faculty Code";
+    roleInputField.name = "faculty_code";
+    roleInputField.placeholder = "FAC-001";
+    roleInputField.required = true;
   }
 });
 
-async function handleSignup(e) {
+const signupForm = document.getElementById("signupForm");
+
+signupForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const role = document.getElementById("roleInput").value;
-  const username = document.getElementById("email").value.split("@")[0];
-  const name = document.getElementById("full_name").value;
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const password2 = document.getElementById("password").value;
-  console.log(role, username, name, email, password);
+  const formData = new FormData(signupForm);
+  const data = Object.fromEntries(formData.entries());
 
-  let roleSpecificData = {};
-  if (role === "student") {
-    roleSpecificData.student_id = document.getElementById("student_id").value;
-  } else if (role === "faculty") {
-    roleSpecificData.faculty_code =
-      document.getElementById("faculty_code").value;
-  }
-
-  const registrationUrl = "/api/auth/register/";
+  // Backend expects: username, email, password, password2, role, student_id/faculty_code
+  data.username = data.email.split("@")[0];
+  data.name = data.full_name;
 
   try {
-    const response = await fetch(registrationUrl, {
+    const response = await fetch("http://127.0.0.1:8000/api/users/signup/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        username: username,
-        name: name,
-        email: email,
-        password: password,
-        password2: password2,
-        role: role,
-        ...roleSpecificData,
-      }),
+      body: JSON.stringify(data),
     });
 
-    const data = await response.json();
-
+    const result = await response.json();
     if (response.ok) {
-      alert(`Registration Successful for ${role}! You can now log in.`);
-      window.location.href = "/login/";
+      alert("Registration successful! You can now login.");
+      signupForm.reset();
     } else {
-      const errorMsg =
-        data.error ||
-        (Object.keys(data).length > 0
-          ? `${Object.keys(data)[0]}: ${data[Object.keys(data)[0]][0]}`
-          : "Registration failed.");
-      alert(`Registration Failed: ${errorMsg}`);
+      console.error(result);
+      alert("Error: " + JSON.stringify(result));
     }
-  } catch (error) {
-    console.error("Network Error during Registration:", error);
-    alert("A network error occurred. Please check your connection.");
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong.");
   }
-}
-
-// login
-async function handleLogin(e) {
-  e.preventDefault();
-
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("login-password").value;
-
-  const loginUrl = "/api/auth/login/";
-
-  try {
-    const response = await fetch(loginUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("user_role", data.role);
-
-      alert(`Login Successful! Welcome, ${data.username}`);
-
-      if (data.role === "student") {
-        window.location.href = "/studentDashboard/";
-      } else if (data.role === "faculty") {
-        window.location.href = "/facultyDashboard/";
-      } else {
-        window.location.href = "/";
-      }
-    } else {
-      alert(`Login Failed: ${data.error || "Invalid Credentials."}`);
-    }
-  } catch (error) {
-    console.error("Network Error:", error);
-    alert("A network error occurred. Please try again.");
-  }
-}
+});

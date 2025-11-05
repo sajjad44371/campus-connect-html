@@ -1,9 +1,10 @@
-
+# serializers
 from rest_framework import serializers
 from .models import CustomUser
 
 class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
+    name = serializers.CharField(required=False)
     
     class Meta:
         model = CustomUser
